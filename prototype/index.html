@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>NextStep prototype</title>
+<style>
+:root{
+  --bg:#F8F7F3; --surface:#FFFFFF; --surface-alt:#F0F1ED; --ink:#1D2220; --muted:#656D69;
+  --accent:#3F695B; --accent-ink:#FFFFFF; --accent-soft:#E3ECE6; --accent-text:#3F695B;
+  --sep:rgba(29,34,32,.12); --scrim:rgba(18,23,22,.32); --bar:rgba(248,247,243,.82);
+  --danger:#B4473A; --track:#E4E6E1; --shadow:0 1px 2px rgba(29,34,32,.05),0 8px 24px rgba(29,34,32,.06);
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",system-ui,"Helvetica Neue",sans-serif;
+  --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px);
+}
+[data-theme="dark"]{
+  --bg:#121716; --surface:#1C2320; --surface-alt:#242C29; --ink:#F6F7F3; --muted:#B3BCB6;
+  --accent:#8FBFAB; --accent-ink:#0F1E19; --accent-soft:#25332D; --accent-text:#9CCAB6;
+  --sep:rgba(246,247,243,.12); --scrim:rgba(0,0,0,.5); --bar:rgba(18,23,22,.8);
+  --danger:#E8857A; --track:#2B3431; --shadow:none;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+
+/* device frame: full-screen on phones, framed on larger screens */
+.device{position:relative;width:100%;height:100dvh;overflow:hidden;background:var(--bg)}
+@media (min-width:600px) and (min-height:760px){
+  body{display:grid;place-items:center;background:#D9DBD6}
+  [data-theme="dark"] body, body[data-theme="dark"]{background:#050707}
+  .device{width:390px;height:844px;border-radius:52px;box-shadow:0 0 0 11px #1a1d1c,0 0 0 13px #3a3f3d,0 30px 80px rgba(0,0,0,.35)}
+  .device{--st:47px;--sb:34px}
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:122px;height:36px;border-radius:20px;background:#000;z-index:100}
+  .homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--ink);opacity:.85;z-index:100}
+}
+@media not all and (min-width:600px) and (min-height:760px){.island,.homebar{display:none}}
+
+.screen{position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:calc(var(--st) + 12px) 20px calc(var(--sb) + 96px)}
+.screen.no-tabs{padding-bottom:calc(var(--sb) + 24px)}
+
+/* type */
+.date{font-size:15px;font-weight:600;color:var(--muted);margin:8px 0 4px}
+.large-title{font-size:34px;line-height:41px;font-weight:700;letter-spacing:.2px;margin:4px 0 20px}
+.headline{font-size:32px;line-height:38px;font-weight:700;letter-spacing:-.2px;margin:0 0 24px;text-wrap:balance}
+.section-title{font-size:20px;font-weight:600;margin:32px 0 10px}
+.group-head{font-size:13px;color:var(--muted);margin:24px 16px 7px}
+.foot{font-size:13px;color:var(--muted);margin:7px 16px 0;line-height:18px}
+.muted{color:var(--muted)}
+
+/* hero card */
+.hero{background:var(--surface);border-radius:22px;padding:22px 20px 20px;box-shadow:var(--shadow)}
+.hero .for{font-size:15px;color:var(--muted);font-weight:500;margin-bottom:6px;overflow-wrap:anywhere}
+.hero .step{font-size:24px;line-height:30px;font-weight:600;letter-spacing:-.2px;margin:0 0 6px;overflow-wrap:anywhere}
+.hero .dur{font-size:15px;color:var(--muted);margin-bottom:20px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border-radius:16px;font-size:17px;font-weight:600;transition:transform .12s ease,opacity .12s}
+.btn:active{transform:scale(.98);opacity:.9}
+.btn-primary{background:var(--accent);color:var(--accent-ink)}
+.btn-secondary{background:var(--accent-soft);color:var(--accent-text)}
+.btn-plain{color:var(--accent-text);min-height:44px;font-weight:500}
+.btn-danger{color:var(--danger);min-height:44px;font-weight:500}
+
+/* lists */
+.list{background:var(--surface);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+.row{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:10px 16px;text-align:left;position:relative}
+.row + .row::before{content:"";position:absolute;top:0;left:52px;right:0;height:.5px;background:var(--sep)}
+.list.plain .row + .row::before{left:16px}
+.row:active{background:var(--surface-alt)}
+.row .t{flex:1;min-width:0}
+.row .t b{display:block;font-weight:400;font-size:17px;overflow-wrap:anywhere}
+.row .t small{display:block;font-size:14px;color:var(--muted);margin-top:2px}
+.row .val{color:var(--muted);font-size:17px}
+.chev{width:8px;height:14px;flex:none;opacity:.35}
+.status{width:24px;height:24px;flex:none}
+.progress-note{font-size:15px;color:var(--muted);margin:12px 4px 0}
+
+/* nav */
+.navbar{display:flex;align-items:center;justify-content:space-between;min-height:44px;margin:-4px -8px 0}
+.navbar .title{font-size:17px;font-weight:600}
+.icon-btn{width:44px;height:44px;display:grid;place-items:center;border-radius:22px}
+.add-btn{width:34px;height:34px;border-radius:17px;background:var(--accent-soft);display:grid;place-items:center}
+.back{display:flex;align-items:center;gap:4px;color:var(--accent-text);font-size:17px;min-height:44px;padding:0 8px}
+
+/* tab bar */
+.tabbar{position:absolute;left:0;right:0;bottom:0;z-index:20;display:flex;padding:7px 8px calc(var(--sb) + 2px);background:var(--bar);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-top:.5px solid var(--sep)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:500;color:var(--muted);min-height:44px}
+.tab[aria-selected="true"]{color:var(--accent-text)}
+.tab svg{width:26px;height:26px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:10px 14px;border-radius:20px;background:var(--surface);font-size:15px;box-shadow:var(--shadow);min-height:44px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+
+/* fields */
+.field{background:var(--surface);border-radius:12px;padding:0 16px;box-shadow:var(--shadow)}
+.field input{width:100%;border:0;background:none;font-size:17px;min-height:52px;outline:none}
+.field input::placeholder{color:var(--muted);opacity:.75}
+.label{font-size:15px;font-weight:600;margin:20px 4px 8px}
+.err{color:var(--danger);font-size:14px;margin:8px 4px 0;min-height:18px}
+.seg{display:flex;background:var(--track);border-radius:9px;padding:2px;gap:2px}
+.seg button{flex:1;min-height:36px;border-radius:7px;font-size:15px;font-weight:500}
+.seg button[aria-checked="true"]{background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.12);font-weight:600}
+[data-theme="dark"] .seg button[aria-checked="true"]{background:#3a4440}
+
+/* toggle */
+.switch{width:51px;height:31px;border-radius:16px;background:var(--track);position:relative;flex:none;transition:background .2s}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.2);transition:transform .2s}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"]::after{transform:translateX(20px)}
+
+/* sheets & overlays */
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:40;opacity:0;transition:opacity .25s}
+.scrim.in{opacity:1}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:41;background:var(--bg);border-radius:14px 14px 0 0;max-height:calc(100% - var(--st) - 10px);display:flex;flex-direction:column;transform:translateY(100%);transition:transform .32s cubic-bezier(.2,.8,.2,1)}
+.sheet.in{transform:none}
+.grabber{width:36px;height:5px;border-radius:3px;background:var(--sep);margin:6px auto 0}
+.sheet-head{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:4px 8px;min-height:52px}
+.sheet-head .title{font-size:17px;font-weight:600;text-align:center}
+.sheet-head .l{justify-self:start}.sheet-head .r{justify-self:end}
+.sheet-head button{min-height:44px;padding:0 10px;color:var(--accent-text);font-size:17px}
+.sheet-head .r button{font-weight:600}
+.sheet-body{overflow-y:auto;padding:4px 20px calc(var(--sb) + 20px)}
+.cover{position:absolute;inset:0;z-index:30;background:var(--bg);transform:translateY(100%);transition:transform .38s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding:calc(var(--st) + 8px) 24px calc(var(--sb) + 20px)}
+.cover.in{transform:none}
+.push{position:absolute;inset:0;z-index:25;background:var(--bg);transform:translateX(100%);transition:transform .32s cubic-bezier(.2,.8,.2,1)}
+.push.in{transform:none}
+
+.alert-wrap{position:absolute;inset:0;z-index:60;display:grid;place-items:center;background:var(--scrim);opacity:0;transition:opacity .2s}
+.alert-wrap.in{opacity:1}
+.alert{width:270px;border-radius:14px;background:rgba(242,242,242,.92);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);color:#000;text-align:center;overflow:hidden;transform:scale(1.1);transition:transform .2s}
+[data-theme="dark"] .alert{background:rgba(44,44,46,.92);color:#fff}
+.alert-wrap.in .alert{transform:none}
+.alert h3{font-size:17px;font-weight:600;margin:19px 16px 2px;line-height:22px}
+.alert p{font-size:13px;line-height:17px;margin:2px 16px 19px}
+.alert .acts{display:flex;border-top:.5px solid rgba(60,60,67,.3)}
+.alert .acts.stack{flex-direction:column}
+.alert .acts button{flex:1;min-height:44px;font-size:17px;color:#007AFF}
+[data-theme="dark"] .alert .acts button{color:#0A84FF}
+.alert .acts button + button{border-left:.5px solid rgba(60,60,67,.3)}
+.alert .acts.stack button + button{border-left:0;border-top:.5px solid rgba(60,60,67,.3)}
+.alert .acts .b{font-weight:600}
+.alert .acts .d{color:#FF3B30}
+
+/* focus */
+.focus-top{display:flex;justify-content:space-between;align-items:center;min-height:44px}
+.focus-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.ring{position:relative;width:min(72vw,280px);aspect-ratio:1}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .time{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(52px,16vw,68px);font-weight:200;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.focus-for{font-size:15px;color:var(--muted);margin:32px 0 6px;overflow-wrap:anywhere}
+.focus-step{font-size:22px;font-weight:600;line-height:28px;margin:0;max-width:300px;overflow-wrap:anywhere}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:16px;background:var(--accent-soft);color:var(--accent-text);font-size:14px;font-weight:500;margin-top:20px}
+.focus-actions{display:flex;flex-direction:column;gap:8px}
+.big-msg{font-size:34px;font-weight:700;line-height:41px;margin:0 0 10px}
+
+/* onboarding */
+.ob{display:flex;flex-direction:column;min-height:100%}
+.ob .grow{flex:1}
+.ob h1{font-size:34px;line-height:41px;font-weight:700;margin:0 0 12px;letter-spacing:-.2px}
+.ob p.lead{font-size:17px;line-height:24px;color:var(--muted);margin:0 0 24px}
+.dots{display:flex;gap:6px;justify-content:center;margin:16px 0}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--sep)}
+.dots i.on{background:var(--accent)}
+
+/* progress */
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat{background:var(--surface);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+.stat b{display:block;font-size:34px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat span{font-size:15px;color:var(--muted)}
+.week{background:var(--surface);border-radius:18px;padding:18px 14px;box-shadow:var(--shadow);display:flex;justify-content:space-between}
+.day{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:13px;color:var(--muted);width:36px}
+.day i{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--sep);display:grid;place-items:center}
+.day.on i{background:var(--accent);border-color:var(--accent)}
+.day.today span{color:var(--ink);font-weight:600}
+.observe{font-size:17px;line-height:24px;margin:20px 4px 0}
+
+/* shield mock */
+.shield{position:absolute;inset:0;z-index:70;background:#F2F2F7;color:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:calc(var(--st) + 20px) 32px calc(var(--sb) + 24px);opacity:0;transition:opacity .25s}
+[data-theme="dark"] .shield{background:#000;color:#fff}
+.shield.in{opacity:1}
+.shield .note{position:absolute;top:calc(var(--st) + 10px);left:16px;right:16px;font-size:12px;color:#8E8E93}
+.shield .mark{width:64px;height:64px;margin-bottom:20px}
+.shield h2{font-size:22px;font-weight:600;margin:0 0 8px}
+.shield p{font-size:15px;line-height:20px;color:#6C6C70;margin:0 0 auto;max-width:280px}
+[data-theme="dark"] .shield p{color:#AEAEB2}
+.shield .sb{width:100%;max-width:340px;margin-top:auto}
+.shield .sb button{width:100%;min-height:50px;border-radius:14px;font-size:17px;font-weight:600}
+.shield .sb .p{background:#3F695B;color:#fff}
+.shield .sb .s{color:#3F695B;margin-top:6px;font-weight:500}
+[data-theme="dark"] .shield .sb .s{color:#8FBFAB}
+.spacer{flex:1}
+
+.toast{position:absolute;left:50%;top:calc(var(--st) + 8px);transform:translate(-50%,-140%);z-index:80;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:20px;font-size:15px;font-weight:500;transition:transform .3s;white-space:nowrap}
+.toast.in{transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="device" id="device">
+  <div class="island" aria-hidden="true"></div>
+  <div id="app"></div>
+  <div class="homebar" aria-hidden="true"></div>
+</div>
+<script>
+(() => {
+const STORE = 'nextstep-proto-v1';
+const $app = document.getElementById('app');
+const $dev = document.getElementById('device');
+
+/* ---------- state ---------- */
+const fresh = () => ({
+  onboarded:false, commitments:[], sessions:[], active:null,
+  settings:{appearance:'system', focusAuth:false, focusApps:[], shieldOn:false, fastTimer:false}
+});
+let S;
+try { S = JSON.parse(localStorage.getItem(STORE)) || fresh(); } catch(e){ S = fresh(); }
+S.settings = Object.assign(fresh().settings, S.settings||{});
+const save = () => { try{ localStorage.setItem(STORE, JSON.stringify(S)); }catch(e){} };
+const ui = { tab:'today', push:null, ob:{step:0, title:'', tiny:'', min:5} };
+
+/* ---------- helpers ---------- */
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const localDate = (d=new Date()) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const uid = () => Math.random().toString(36).slice(2,10);
+const today = () => localDate();
+const speed = () => S.settings.fastTimer ? 12 : 1; // 1 minute = 5 seconds in fast mode
+
+function fallbackStep(title){
+  const t = title.toLowerCase();
+  const rules = [
+    [/run|walk|gym|exercise|workout|move|yoga|stretch/, 'Put on your shoes'],
+    [/read|book/, 'Open to where you left off'],
+    [/learn|study|course|practice|language/, 'Open the lesson and do the first part'],
+    [/write|essay|blog|report|draft|journal/, 'Write one rough sentence'],
+    [/email|inbox|reply|message/, 'Open the oldest email'],
+    [/clean|tidy|laundry|dishes|declutter/, 'Clear one surface'],
+    [/call|phone/, 'Find the number and dial'],
+    [/offline|phone-free|outside/, 'Put your phone in another room'],
+    [/tax|bill|budget|finance/, 'Open the first document']
+  ];
+  for (const [re, s] of rules) if (re.test(t)) return s;
+  return 'Spend two minutes on the very first piece';
+}
+const stepOf = c => c.tinyStep?.trim() || fallbackStep(c.title);
+
+const todays = () => S.commitments.filter(c => c.selectedDate === today() && !c.archivedAt);
+const saved  = () => S.commitments.filter(c => c.selectedDate !== today() && !c.archivedAt && !(c.status==='task_done'));
+function statusOf(c){
+  if (c.doneDate === today()) return 'task_done';
+  const ss = S.sessions.filter(s => s.cid === c.id && s.date === today());
+  if (ss.some(s => s.finished)) return 'session_finished';
+  if (ss.length) return 'started';
+  return 'not_started';
+}
+const STATUS_LABEL = {not_started:'Not started', started:'Started', session_finished:'Session finished', task_done:'Done'};
+function statusIcon(st){
+  if (st==='task_done') return `<svg class="status" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="var(--accent)"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  if (st==='not_started') return `<svg class="status" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="none" stroke="var(--sep)" stroke-width="1.8"/></svg>`;
+  const full = st==='session_finished';
+  return `<svg class="status" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="none" stroke="var(--accent)" stroke-width="1.8"/><path d="M12 4.5a7.5 7.5 0 0 1 0 15z" fill="var(--accent)" ${full?'':'opacity=".9"'}/>${full?'<circle cx="12" cy="12" r="7.5" fill="var(--accent)" opacity=".35"/>':''}</svg>`;
+}
+const chev = `<svg class="chev" viewBox="0 0 8 14" aria-hidden="true"><path d="M1 1l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const backChev = `<svg width="12" height="20" viewBox="0 0 12 20" aria-hidden="true"><path d="M10 2L2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const mark = (size=56) => `<svg width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true"><rect x="6" y="40" width="16" height="16" rx="5" fill="var(--accent)"/><rect x="24" y="26" width="16" height="30" rx="5" fill="var(--accent)" opacity=".35"/><rect x="42" y="10" width="16" height="46" rx="5" fill="var(--accent)" opacity=".18"/></svg>`;
+
+function nextUp(){
+  const list = todays();
+  return list.find(c => statusOf(c)==='not_started') || list.find(c => ['started','session_finished'].includes(statusOf(c))) || null;
+}
+
+/* ---------- theme ---------- */
+function applyTheme(){
+  const a = S.settings.appearance;
+  const dark = a==='dark' || (a==='system' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.body.dataset.theme = dark ? 'dark' : 'light';
+  $dev.dataset.theme = dark ? 'dark' : 'light';
+}
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
+
+/* ---------- toast ---------- */
+function toast(msg){
+  const t = document.createElement('div'); t.className='toast'; t.setAttribute('role','status'); t.textContent=msg;
+  $dev.appendChild(t); requestAnimationFrame(()=>t.classList.add('in'));
+  setTimeout(()=>{t.classList.remove('in'); setTimeout(()=>t.remove(),350);},1800);
+}
+
+/* ---------- overlays ---------- */
+function openLayer(cls, html, opts={}){
+  let scrim;
+  if (opts.scrim){ scrim = document.createElement('div'); scrim.className='scrim'; $dev.appendChild(scrim); }
+  const el = document.createElement('div'); el.className = cls; el.innerHTML = html;
+  if (opts.role){ el.setAttribute('role', opts.role); el.setAttribute('aria-modal','true'); }
+  $dev.appendChild(el);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ el.classList.add('in'); scrim?.classList.add('in'); }));
+  const close = () => { el.classList.remove('in'); scrim?.classList.remove('in'); setTimeout(()=>{el.remove(); scrim?.remove();},380); };
+  if (scrim && opts.dismiss!==false) scrim.addEventListener('click', close);
+  setTimeout(()=>{ const f = el.querySelector('[autofocus]') || el.querySelector('button'); f?.focus({preventScroll:true}); }, 60);
+  return {el, close};
+}
+function sheet(title, body, {left='Cancel', right=null, onRight=null}={}){
+  const L = openLayer('sheet', `<div class="grabber" aria-hidden="true"></div>
+    <div class="sheet-head"><div class="l">${left?`<button data-x="left">${left}</button>`:''}</div><div class="title">${esc(title)}</div><div class="r">${right?`<button data-x="right">${right}</button>`:''}</div></div>
+    <div class="sheet-body">${body}</div>`, {scrim:true, role:'dialog'});
+  L.el.querySelector('[data-x="left"]')?.addEventListener('click', L.close);
+  L.el.querySelector('[data-x="right"]')?.addEventListener('click', () => onRight?.(L));
+  return L;
+}
+function alertBox(title, msg, buttons, stack=false){
+  const L = openLayer('alert-wrap', `<div class="alert" role="alertdialog" aria-labelledby="at"><h3 id="at">${esc(title)}</h3>${msg?`<p>${esc(msg)}</p>`:''}<div class="acts ${stack?'stack':''}">${buttons.map((b,i)=>`<button data-i="${i}" class="${b.style||''}">${esc(b.label)}</button>`).join('')}</div></div>`);
+  L.el.querySelectorAll('[data-i]').forEach(btn => btn.addEventListener('click', () => { L.close(); buttons[+btn.dataset.i].on?.(); }));
+  return L;
+}
+
+/* ---------- onboarding ---------- */
+const SUGGEST = ['Move my body','Learn something','Get an important task done','Spend time offline'];
+function renderOnboarding(){
+  const o = ui.ob;
+  const dots = `<div class="dots" aria-hidden="true">${[0,1,2].map(i=>`<i class="${i===o.step?'on':''}"></i>`).join('')}</div>`;
+  let html='';
+  if (o.step===0){
+    html = `<div class="ob"><div class="grow"></div>
+      <div style="margin-bottom:28px">${mark(64)}</div>
+      <h1>Make starting easier.</h1>
+      <p class="lead">Pick what matters, take one small step, and get on with your day.</p>
+      <div class="grow"></div>${dots}
+      <button class="btn btn-primary" data-a="ob-next">Get started</button></div>`;
+  } else if (o.step===1){
+    html = `<div class="ob">
+      <div class="navbar"><button class="back" data-a="ob-back">${backChev}Back</button></div>
+      <h1 style="margin-top:12px">What's one thing you want to make time for?</h1>
+      <div class="field" style="margin-top:12px"><input id="ob-title" maxlength="80" placeholder="Type your own" value="${esc(o.title)}" aria-label="What you want to make time for" autocomplete="off"></div>
+      <div class="err" id="ob-err" role="alert"></div>
+      <div class="label">Or pick one</div>
+      <div class="chips">${SUGGEST.map(s=>`<button class="chip" data-a="ob-chip" data-v="${esc(s)}" aria-pressed="${o.title===s}">${esc(s)}</button>`).join('')}</div>
+      <div class="grow"></div>${dots}
+      <button class="btn btn-primary" data-a="ob-next">Continue</button></div>`;
+  } else {
+    const def = o.tiny || fallbackStep(o.title);
+    html = `<div class="ob">
+      <div class="navbar"><button class="back" data-a="ob-back">${backChev}Back</button></div>
+      <h1 style="margin-top:12px">What's the smallest first step?</h1>
+      <p class="lead">Small enough that starting feels easy. You can change it anytime.</p>
+      <div class="field"><input id="ob-tiny" maxlength="100" value="${esc(def)}" aria-label="Smallest first step" autocomplete="off"></div>
+      <div class="label">How long?</div>
+      ${segDur(o.min,'ob-min')}
+      <div class="grow"></div>${dots}
+      <button class="btn btn-primary" data-a="ob-finish">Continue</button></div>`;
+  }
+  $app.innerHTML = `<section class="screen no-tabs">${html}</section>`;
+  if (o.step===1){ const i=document.getElementById('ob-title'); i.addEventListener('input',()=>{o.title=i.value; document.querySelectorAll('[data-a="ob-chip"]').forEach(c=>c.setAttribute('aria-pressed', c.dataset.v===i.value));}); }
+}
+const segDur = (v, name) => `<div class="seg" role="radiogroup" aria-label="Duration">${[2,5,10,20].map(m=>`<button role="radio" data-a="seg" data-name="${name}" data-v="${m}" aria-checked="${m===v}">${m} min</button>`).join('')}</div>`;
+
+/* ---------- today ---------- */
+function renderToday(){
+  const d = new Date();
+  const dateStr = d.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
+  const list = todays();
+  const up = nextUp();
+  const h = d.getHours();
+  const greet = h<12?'Good morning':h<18?'Good afternoon':'Good evening';
+  let body;
+  if (!list.length){
+    const sv = saved();
+    body = `<h1 class="headline">What matters today?</h1>
+      <button class="btn btn-primary" data-a="add">Add your first commitment</button>
+      ${sv.length ? `<div class="section-title">From your saved list</div><div class="list">${sv.slice(0,6).map(c=>`<button class="row" data-a="pick" data-id="${c.id}">${plusIcon()}<span class="t"><b>${esc(c.title)}</b><small>${esc(stepOf(c))}</small></span></button>`).join('')}</div>`
+      : `<div class="section-title">Or start with one of these</div><div class="chips">${SUGGEST.map(s=>`<button class="chip" data-a="quick" data-v="${esc(s)}">${esc(s)}</button>`).join('')}</div>`}`;
+  } else {
+    const startedN = list.filter(c=>statusOf(c)!=='not_started').length;
+    const hero = up ? `<div class="hero">
+        <div class="for">${esc(up.title)}</div>
+        <p class="step">${esc(stepOf(up))}</p>
+        <div class="dur">${up.minutes} minutes is enough</div>
+        <button class="btn btn-primary" data-a="start" data-id="${up.id}">${playIcon()}Start</button>
+      </div>` : `<div class="hero"><p class="step">That's everything for today.</p><div class="dur" style="margin-bottom:0">Go enjoy the rest of your day.</div></div>`;
+    body = `<h1 class="headline">${up ? (statusOf(up)==='not_started' ? 'One small step is enough.' : 'Pick up where you left off.') : 'You showed up today.'}</h1>
+      ${hero}
+      <div class="section-title" style="display:flex;justify-content:space-between;align-items:center">Today </div>
+      <div class="list">${list.map(c=>{const st=statusOf(c);return `<button class="row" data-a="detail" data-id="${c.id}" aria-label="${esc(c.title)}, ${STATUS_LABEL[st]}">${statusIcon(st)}<span class="t"><b>${esc(c.title)}</b><small>${STATUS_LABEL[st]}</small></span>${chev}</button>`}).join('')}</div>
+      <p class="progress-note">${startedN} of ${list.length} started</p>`;
+  }
+  return `<section class="screen">
+    <div class="navbar" style="margin-bottom:4px"><span class="date" style="margin:0 8px">${dateStr}</span>${list.length&&list.length<3||!list.length?`<button class="add-btn" data-a="add" aria-label="Add commitment"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 2v12M2 8h12" stroke="var(--accent-text)" stroke-width="2.2" stroke-linecap="round"/></svg></button>`:'<span></span>'}</div>
+    <p class="muted" style="margin:0 0 6px;font-size:15px">${greet}</p>
+    ${body}
+  </section>`;
+}
+const playIcon = () => `<svg width="14" height="16" viewBox="0 0 14 16" aria-hidden="true"><path d="M2 1.8v12.4a1 1 0 0 0 1.5.9l10-6.2a1 1 0 0 0 0-1.8l-10-6.2A1 1 0 0 0 2 1.8z" fill="currentColor"/></svg>`;
+const plusIcon = () => `<svg class="status" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="none" stroke="var(--accent)" stroke-width="1.8"/><path d="M12 7.5v9M7.5 12h9" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+
+/* ---------- add / edit sheet ---------- */
+function editSheet(c=null, preset=''){
+  const isNew = !c;
+  let min = c?.minutes || 5;
+  const L = sheet(isNew?'New commitment':'Edit', `
+    <div class="label">What do you want to do?</div>
+    <div class="field"><input id="f-title" maxlength="80" value="${esc(c?.title||preset)}" placeholder="e.g. Go for a walk" autocomplete="off" ${isNew?'autofocus':''}></div>
+    <div class="err" id="f-err" role="alert"></div>
+    <div class="label" style="margin-top:4px">Smallest first step <span class="muted" style="font-weight:400">(optional)</span></div>
+    <div class="field"><input id="f-tiny" maxlength="100" value="${esc(c?.tinyStep||'')}" placeholder="We'll suggest one if you skip this" autocomplete="off"></div>
+    <div class="label">How long?</div>
+    ${segDur(min,'f-min')}
+    ${!isNew?`<div style="margin-top:28px" class="list plain"><button class="row btn-danger" data-x="del" style="justify-content:center">Delete commitment</button></div>`:''}
+  `, {right:'Save', onRight:(L)=>{
+    const title = L.el.querySelector('#f-title').value.trim();
+    if (!title){ L.el.querySelector('#f-err').textContent='Add a few words so you know what this is.'; L.el.querySelector('#f-title').focus(); return; }
+    const tiny = L.el.querySelector('#f-tiny').value.trim();
+    min = +(L.el.querySelector('[data-name="f-min"][aria-checked="true"]')?.dataset.v || 5);
+    if (isNew){
+      const sel = todays().length < 3 ? today() : null;
+      S.commitments.push({id:uid(), title, tinyStep:tiny, minutes:min, createdAt:Date.now(), updatedAt:Date.now(), selectedDate:sel});
+      toast(sel?'Added to Today':'Saved for later');
+    } else { Object.assign(c,{title, tinyStep:tiny, minutes:min, updatedAt:Date.now()}); toast('Saved'); }
+    save(); L.close(); render();
+  }});
+  bindSeg(L.el);
+  L.el.querySelector('[data-x="del"]')?.addEventListener('click', ()=>{
+    alertBox('Delete this commitment?', 'Its past sessions stay in your progress.', [
+      {label:'Cancel'}, {label:'Delete', style:'d', on:()=>{ c.archivedAt=Date.now(); c.selectedDate=null; save(); L.close(); render(); toast('Deleted'); }}
+    ]);
+  });
+}
+function bindSeg(root){
+  root.querySelectorAll('[data-a="seg"]').forEach(b=>b.addEventListener('click',()=>{
+    root.querySelectorAll(`[data-name="${b.dataset.name}"]`).forEach(x=>x.setAttribute('aria-checked', x===b));
+    if (b.dataset.name==='ob-min') ui.ob.min=+b.dataset.v;
+  }));
+}
+
+/* ---------- commitment detail ---------- */
+function detailSheet(c){
+  const st = statusOf(c);
+  const L = sheet('', `
+    <div style="padding:0 4px">
+      <div class="muted" style="font-size:15px;display:flex;gap:8px;align-items:center">${statusIcon(st)}${STATUS_LABEL[st]}</div>
+      <h2 style="font-size:28px;line-height:34px;margin:10px 0 6px;overflow-wrap:anywhere">${esc(c.title)}</h2>
+      <p style="font-size:17px;color:var(--muted);margin:0 0 24px;overflow-wrap:anywhere">First step: ${esc(stepOf(c))}</p>
+    </div>
+    ${st!=='task_done'?`<button class="btn btn-primary" data-x="start">${playIcon()}Start ${c.minutes} min</button>`:''}
+    <div class="list plain" style="margin-top:20px">
+      <button class="row" data-x="done"><span class="t"><b>${st==='task_done'?'Mark as not done':'Mark as done'}</b></span></button>
+      <button class="row" data-x="edit"><span class="t"><b>Edit</b></span>${chev}</button>
+      <button class="row" data-x="remove"><span class="t"><b>Remove from Today</b><small>It stays in your saved list</small></span></button>
+    </div>`, {left:null, right:'Done', onRight:L=>L.close()});
+  L.el.querySelector('[data-x="start"]')?.addEventListener('click',()=>{L.close(); startSession(c.id);});
+  L.el.querySelector('[data-x="done"]').addEventListener('click',()=>{
+    if (st==='task_done'){ c.doneDate=null; toast('Reopened'); } else { c.doneDate=today(); c.doneAt=Date.now(); toast('Marked as done'); }
+    save(); L.close(); render();
+  });
+  L.el.querySelector('[data-x="edit"]').addEventListener('click',()=>{L.close(); setTimeout(()=>editSheet(c),200);});
+  L.el.querySelector('[data-x="remove"]').addEventListener('click',()=>{c.selectedDate=null; save(); L.close(); render(); toast('Removed from Today');});
+}
+
+/* ---------- focus session ---------- */
+let focusLayer=null, tick=null;
+function startSession(cid){
+  if (S.active) { openFocus(); return; }
+  const c = S.commitments.find(x=>x.id===cid); if (!c) return;
+  if (c.selectedDate!==today() && todays().length<3) c.selectedDate=today();
+  const sid = uid();
+  S.sessions.push({id:sid, cid, date:today(), startedAt:Date.now(), tz:Intl.DateTimeFormat().resolvedOptions().timeZone, elapsed:0, counted:true, finished:false});
+  S.active = {sid, cid, startedAt:Date.now(), minutes:c.minutes, pausedAt:null, pausedTotal:0, shield: S.settings.focusAuth && S.settings.shieldOn && S.settings.focusApps.length>0};
+  save(); openFocus();
+}
+function elapsedMs(){
+  const a=S.active; if(!a) return 0;
+  const now = a.pausedAt || Date.now();
+  return (now - a.startedAt - a.pausedTotal) * speed();
+}
+function fmt(ms){ const s=Math.max(0,Math.ceil(ms/1000)); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
+function openFocus(){
+  const a=S.active; const c=S.commitments.find(x=>x.id===a.cid);
+  const R=46, C=2*Math.PI*R;
+  focusLayer = openLayer('cover', `
+    <div class="focus-top"><span class="muted" style="font-size:15px">${S.settings.fastTimer?'Fast timer on':'Focus'}</span><button class="btn-plain" data-x="end" style="padding:0 4px">End</button></div>
+    <div class="focus-main">
+      <div class="ring" role="timer" aria-live="off" aria-label="Time remaining">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="${R}" fill="none" stroke="var(--track)" stroke-width="1.6"/><circle id="arc" cx="50" cy="50" r="${R}" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C}"/></svg>
+        <div class="time" id="time">${fmt(a.minutes*60000)}</div>
+      </div>
+      <div class="focus-for">${esc(c.title)}</div>
+      <p class="focus-step">${esc(stepOf(c))}</p>
+      ${a.shield?`<span class="pill"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1l5 2v4c0 3-2.2 5.3-5 6-2.8-.7-5-3-5-6V3z" fill="currentColor"/></svg>Distracting apps are shielded</span>`:''}
+    </div>
+    <div class="focus-actions">
+      <button class="btn btn-secondary" data-x="pause">${a.pausedAt?'Resume':'Pause'}</button>
+      ${a.shield?`<div style="display:flex;gap:8px"><button class="btn btn-plain" data-x="break">Take a break</button><button class="btn btn-plain" data-x="shield">Preview shield</button></div>`:''}
+    </div>`, {role:'dialog'});
+  const el=focusLayer.el, arc=el.querySelector('#arc'), time=el.querySelector('#time');
+  const total=a.minutes*60000;
+  const update=()=>{
+    if(!S.active) return;
+    const e=elapsedMs(), left=total-e;
+    time.textContent=fmt(left);
+    arc.style.strokeDashoffset = C*(1-Math.min(1,e/total));
+    if(left<=0){ clearInterval(tick); sessionComplete(); }
+  };
+  update(); clearInterval(tick); tick=setInterval(update,250);
+  el.querySelector('[data-x="pause"]').addEventListener('click',e=>{
+    if(a.pausedAt){ a.pausedTotal+=Date.now()-a.pausedAt; a.pausedAt=null; e.currentTarget.textContent='Pause'; }
+    else { a.pausedAt=Date.now(); e.currentTarget.textContent='Resume'; }
+    save(); update();
+  });
+  el.querySelector('[data-x="end"]').addEventListener('click',endEarly);
+  el.querySelector('[data-x="break"]')?.addEventListener('click',breakSheet);
+  el.querySelector('[data-x="shield"]')?.addEventListener('click',showShield);
+}
+function closeFocus(){ clearInterval(tick); focusLayer?.close(); focusLayer=null; }
+function finishSession(counted, finished){
+  const a=S.active; if(!a) return;
+  const s=S.sessions.find(x=>x.id===a.sid);
+  if(s){ s.elapsed=Math.min(elapsedMs(), a.minutes*60000); s.counted=counted; s.finished=finished; s.endedAt=Date.now(); }
+  const cid=a.cid; S.active=null; save(); return cid;
+}
+function endEarly(){
+  const a=S.active; if(!a) return;
+  const a0=a.pausedAt; if(!a0) a.pausedAt=Date.now();
+  const mins = Math.max(1, Math.round(elapsedMs()/60000));
+  alertBox("That's okay.", `You put in about ${mins} min. Want to count it?`, [
+    {label:'Count it', style:'b', on:()=>{ finishSession(true,false); closeFocus(); render(); toast('Counted'); }},
+    {label:"Don't count it", on:()=>{ finishSession(false,false); closeFocus(); render(); }},
+    {label:'Keep going', on:()=>{ if(!a0){ a.pausedTotal+=Date.now()-a.pausedAt; a.pausedAt=null; } save(); }}
+  ], true);
+}
+function sessionComplete(){
+  const a=S.active; const c=S.commitments.find(x=>x.id===a.cid);
+  const cid=finishSession(true,true);
+  closeFocus();
+  const L=openLayer('cover', `<div class="spacer"></div>
+    <div style="margin-bottom:24px">${mark(56)}</div>
+    <h1 class="big-msg">You showed up.</h1>
+    <p style="font-size:17px;color:var(--muted);line-height:24px;margin:0">${a.minutes} minutes on ${esc(c.title)}. That counts.</p>
+    <div class="spacer"></div>
+    <div class="focus-actions">
+      <button class="btn btn-primary" data-x="keep">Keep going</button>
+      <button class="btn btn-secondary" data-x="fin">Finish for now</button>
+    </div>`, {role:'dialog'});
+  L.el.querySelector('[data-x="keep"]').addEventListener('click',()=>{L.close(); setTimeout(()=>startSession(cid),250);});
+  L.el.querySelector('[data-x="fin"]').addEventListener('click',()=>{
+    alertBox(`Is “${c.title}” done for today?`, 'Only you know. Either answer is fine.', [
+      {label:'Not yet', on:()=>{L.close(); render();}},
+      {label:'Yes, it’s done', style:'b', on:()=>{ c.doneDate=today(); c.doneAt=Date.now(); save(); L.close(); render(); toast('Marked as done'); }}
+    ]);
+  });
+}
+function breakSheet(){
+  const L=sheet('Take a break', `<p style="font-size:17px;line-height:24px;margin:8px 4px 20px">Your timer pauses and apps open up again. We'll bring the shield back when the break ends.</p>
+    <div class="list plain">${[5,10,15].map(m=>`<button class="row" data-m="${m}"><span class="t"><b>${m} minutes</b></span>${chev}</button>`).join('')}</div>
+    <div class="list plain" style="margin-top:20px"><button class="row btn-danger" data-x="off" style="justify-content:center">Turn off restrictions</button></div>`);
+  L.el.querySelectorAll('[data-m]').forEach(b=>b.addEventListener('click',()=>{
+    const a=S.active; if(!a.pausedAt) a.pausedAt=Date.now(); save(); L.close();
+    const until=Date.now()+(+b.dataset.m*60000)/speed();
+    const B=openLayer('cover', `<div class="spacer"></div><h1 class="big-msg">Enjoy your break.</h1>
+      <p style="font-size:17px;color:var(--muted);margin:0">Back in <span id="bt"></span></p><div class="spacer"></div>
+      <button class="btn btn-primary" data-x="back">Back to focus</button>`, {role:'dialog'});
+    const bt=B.el.querySelector('#bt'); const bi=setInterval(()=>{const l=until-Date.now(); bt.textContent=fmt(l*speed()); if(l<=0) resume();},250);
+    const resume=()=>{clearInterval(bi); a.pausedTotal+=Date.now()-a.pausedAt; a.pausedAt=null; save(); B.close(); closeFocus(); setTimeout(openFocus,200);};
+    B.el.querySelector('[data-x="back"]').addEventListener('click',resume);
+  }));
+  L.el.querySelector('[data-x="off"]').addEventListener('click',()=>{ S.active.shield=false; save(); L.close(); closeFocus(); setTimeout(openFocus,200); toast('Restrictions off for this session'); });
+}
+function showShield(){
+  const L=openLayer('shield', `<div class="note">Preview. On a real iPhone, Apple draws this screen when you open a shielded app.</div>
+    <div class="spacer"></div>
+    <div class="mark">${mark(64).replace(/var\(--accent\)/g,'#3F695B')}</div>
+    <h2>Take a moment</h2>
+    <p>You chose to focus right now. A small step is enough.</p>
+    <div class="sb"><button class="p" data-x="back">Back to focus</button><button class="s" data-x="close">Close</button></div>`, {role:'dialog'});
+  L.el.querySelectorAll('button').forEach(b=>b.addEventListener('click',L.close));
+}
+
+/* ---------- progress ---------- */
+function weekDays(){
+  const d=new Date(); const dow=(d.getDay()+6)%7; const mon=new Date(d); mon.setDate(d.getDate()-dow);
+  return [...Array(7)].map((_,i)=>{const x=new Date(mon); x.setDate(mon.getDate()+i); return x;});
+}
+function renderProgress(){
+  const days=weekDays(); const keys=days.map(d=>localDate(d));
+  const wk=S.sessions.filter(s=>keys.includes(s.date));
+  const started=new Set(wk.map(s=>s.cid+'|'+s.date)).size;
+  const done=S.commitments.filter(c=>c.doneDate && keys.includes(c.doneDate)).length;
+  const mins=Math.round(wk.filter(s=>s.counted).reduce((t,s)=>t+(s.elapsed||0),0)/60000);
+  const activeDays=keys.filter(k=>wk.some(s=>s.date===k)).length;
+  const L=['M','T','W','T','F','S','S'];
+  const obs = activeDays===0 ? 'Your week starts with one small step.' : `You started something on ${activeDays} ${activeDays===1?'day':'days'} this week.`;
+  return `<section class="screen">
+    <h1 class="large-title" style="margin-top:44px">Progress</h1>
+    <div class="section-title" style="margin-top:0">This week</div>
+    <div class="week" role="img" aria-label="${obs}">${days.map((d,i)=>`<div class="day ${wk.some(s=>s.date===keys[i])?'on':''} ${keys[i]===today()?'today':''}"><span>${L[i]}</span><i>${wk.some(s=>s.date===keys[i])?'<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2.5 6.3l2.3 2.3L9.5 3.8" fill="none" stroke="var(--accent-ink)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}</i></div>`).join('')}</div>
+    <p class="observe">${obs}</p>
+    <div class="stats" style="margin-top:20px">
+      <div class="stat"><b>${started}</b><span>Started</span></div>
+      <div class="stat"><b>${done}</b><span>Marked done</span></div>
+    </div>
+    <div class="stat" style="margin-top:12px"><b>${mins}<span style="font-size:20px;font-weight:500;color:var(--muted)"> min</span></b><span>Focused, from the time you chose to count</span></div>
+    <p class="foot" style="margin-top:14px">"Marked done" is what you tell us. We never assume a task is finished because a timer ended.</p>
+  </section>`;
+}
+
+/* ---------- you / settings ---------- */
+function renderYou(){
+  const st=S.settings;
+  const focusVal = !st.focusAuth ? 'Off' : st.shieldOn && st.focusApps.length ? 'On' : 'Paused';
+  return `<section class="screen">
+    <h1 class="large-title" style="margin-top:44px">You</h1>
+    <div class="group-head">Appearance</div>
+    <div class="seg" role="radiogroup" aria-label="Appearance">${['system','light','dark'].map(v=>`<button role="radio" data-a="appearance" data-v="${v}" aria-checked="${st.appearance===v}">${v[0].toUpperCase()+v.slice(1)}</button>`).join('')}</div>
+    <div class="group-head">Focus</div>
+    <div class="list plain">
+      <button class="row" data-a="push" data-v="focus"><span class="t"><b>Distracting apps</b></span><span class="val">${focusVal}</span>${chev}</button>
+      <button class="row" data-a="push" data-v="notif"><span class="t"><b>Reminders</b></span><span class="val">Off</span>${chev}</button>
+    </div>
+    <div class="group-head">Privacy</div>
+    <div class="list plain">
+      <button class="row" data-a="push" data-v="data"><span class="t"><b>Your data</b></span>${chev}</button>
+    </div>
+    <div class="group-head">Help</div>
+    <div class="list plain">
+      <button class="row" data-a="push" data-v="help"><span class="t"><b>How NextStep works</b></span>${chev}</button>
+      <div class="row"><span class="t"><b>Version</b></span><span class="val">0.1 prototype</span></div>
+    </div>
+    <div class="group-head">Prototype only</div>
+    <div class="list plain">
+      <div class="row"><span class="t"><b>Fast timer</b><small>1 minute passes in 5 seconds, for testing</small></span><button class="switch" role="switch" aria-label="Fast timer" data-a="fast" aria-checked="${st.fastTimer}"></button></div>
+      <button class="row" data-a="restart-ob"><span class="t"><b style="color:var(--accent-text)">Show onboarding again</b></span></button>
+    </div>
+    <p class="foot">This is a web preview. The real app will be a native iPhone build.</p>
+  </section>`;
+}
+function pushPage(kind){
+  const st=S.settings; let title='', body='';
+  if (kind==='focus'){
+    title='Distracting apps';
+    if (!st.focusAuth){
+      body=`<div style="text-align:center;padding:12px 8px 8px">${mark(52)}</div>
+      <h2 style="font-size:24px;text-align:center;margin:8px 0">Want help avoiding distracting apps?</h2>
+      <p style="font-size:17px;line-height:24px;color:var(--muted);text-align:center;margin:0 0 24px">During a focus session, apps you choose show a calm pause screen instead. You can turn it off anytime, and we never see which apps you pick.</p>
+      <button class="btn btn-primary" data-y="auth">Continue</button>
+      <button class="btn btn-plain" data-y="back" style="width:100%;margin-top:6px">Not now</button>`;
+    } else {
+      const n=st.focusApps.length;
+      body=`<div class="list plain">
+        <div class="row"><span class="t"><b>Shield during focus</b><small>${n?`${n} ${n===1?'category':'categories'} chosen`:'Choose apps first'}</small></span><button class="switch" role="switch" aria-label="Shield during focus" data-y="toggle" aria-checked="${st.shieldOn&&n>0}" ${n?'':'disabled'}></button></div>
+        <button class="row" data-y="pick"><span class="t"><b>Choose apps and categories</b></span>${chev}</button>
+      </div>
+      <p class="foot">Shields only turn on while a focus session is running. Calls, Settings, and NextStep itself are never blocked.</p>
+      <div class="list plain" style="margin-top:28px"><button class="row btn-danger" data-y="revoke" style="justify-content:center">Turn off restrictions</button></div>
+      <p class="foot">To fully remove access, go to iPhone Settings, then Screen Time.</p>`;
+    }
+  } else if (kind==='notif'){
+    title='Reminders';
+    body=`<p style="font-size:17px;line-height:24px;margin:8px 4px">Gentle reminders are coming later. They'll be off unless you turn them on, with quiet hours and one-tap mute.</p>`;
+  } else if (kind==='data'){
+    title='Your data';
+    body=`<p style="font-size:17px;line-height:24px;margin:8px 4px 20px">Everything stays on this iPhone. No account, no tracking, and your task names never leave the device.</p>
+      <div class="list plain"><button class="row btn-danger" data-y="wipe" style="justify-content:center">Delete all data</button></div>`;
+  } else if (kind==='help'){
+    title='How NextStep works';
+    body=`<div class="list plain">
+      <div class="row"><span class="t"><b>Pick up to three things</b><small>What matters today, not everything you could do.</small></span></div>
+      <div class="row"><span class="t"><b>Start with a tiny step</b><small>A few minutes is enough to get moving.</small></span></div>
+      <div class="row"><span class="t"><b>Shield distractions if you want</b><small>Uses Apple's Screen Time. Optional, and you can stop it anytime.</small></span></div>
+      <div class="row"><span class="t"><b>Be honest with yourself</b><small>Starting and finishing are tracked separately.</small></span></div>
+    </div>`;
+  }
+  const L=openLayer('push', `<section class="screen no-tabs">
+    <div class="navbar"><button class="back" data-y="back">${backChev}You</button><span class="title">${esc(title)}</span><span style="width:60px"></span></div>
+    <div style="margin-top:16px">${body}</div></section>`);
+  ui.push=L;
+  const on=(k,f)=>L.el.querySelector(`[data-y="${k}"]`)?.addEventListener('click',f);
+  const refresh=()=>{L.el.remove(); render(); pushPageInstant(kind);};
+  on('back',()=>{L.close(); ui.push=null; render();});
+  on('auth',()=>alertBox('“NextStep” Would Like to Access Screen Time','Providing “NextStep” access to Screen Time may allow it to see your activity data, restrict content, and limit the usage of apps and websites.',[
+    {label:'Continue', on:()=>{ st.focusAuth=true; save(); pickerSheet(refresh); }},
+    {label:'Don’t Allow', style:'b', on:()=>toast('No problem. Focus still works.')}
+  ], true));
+  on('pick',()=>pickerSheet(refresh));
+  on('toggle',e=>{ if(!st.focusApps.length) return; st.shieldOn=!st.shieldOn; save(); e.currentTarget.setAttribute('aria-checked',st.shieldOn); });
+  on('revoke',()=>{ st.focusAuth=false; st.shieldOn=false; st.focusApps=[]; if(S.active) S.active.shield=false; save(); refresh(); toast('Restrictions are off'); });
+  on('wipe',()=>alertBox('Delete all data?','This removes every commitment and session from this iPhone. It can’t be undone.',[
+    {label:'Cancel'},{label:'Delete', style:'d', on:()=>{ S=fresh(); save(); L.close(); ui.push=null; ui.tab='today'; ui.ob={step:0,title:'',tiny:'',min:5}; render(); }}
+  ]));
+}
+function pushPageInstant(kind){ const prev=document.querySelector('.push'); pushPage(kind); const n=document.querySelectorAll('.push'); const el=n[n.length-1]; el.style.transition='none'; el.classList.add('in'); requestAnimationFrame(()=>el.style.transition=''); }
+const CATS=['Social','Games','Entertainment','Creativity','Education','Information & Reading','Health & Fitness','Productivity & Finance','Shopping & Food','Travel','Utilities','Other'];
+function pickerSheet(after){
+  const sel=new Set(S.settings.focusApps);
+  const L=sheet('Choose Activities', `<p class="foot" style="margin:4px 4px 12px">Shown by Apple on a real iPhone. NextStep only gets a private token, never the app names.</p>
+    <div class="list plain">${CATS.map(c=>`<button class="row" data-c="${esc(c)}" role="checkbox" aria-checked="${sel.has(c)}"><span class="cbox">${sel.has(c)?checkOn():checkOff()}</span><span class="t"><b>${esc(c)}</b></span></button>`).join('')}</div>`,
+    {right:'Done', onRight:L=>{ S.settings.focusApps=[...sel]; S.settings.shieldOn=sel.size>0; save(); L.close(); after?.(); if(sel.size) toast(`Shield ready for ${sel.size} ${sel.size===1?'category':'categories'}`); }});
+  L.el.querySelectorAll('[data-c]').forEach(b=>b.addEventListener('click',()=>{const c=b.dataset.c; sel.has(c)?sel.delete(c):sel.add(c); b.setAttribute('aria-checked',sel.has(c)); b.querySelector('.cbox').innerHTML=sel.has(c)?checkOn():checkOff();}));
+}
+const checkOn=()=>`<svg class="status" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#007AFF"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const checkOff=()=>`<svg class="status" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10.5" fill="none" stroke="var(--sep)" stroke-width="1.6"/></svg>`;
+
+/* ---------- tab bar ---------- */
+const ICONS={
+  today:`<svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="5" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2.5v2.5M13 21v2.5M2.5 13H5M21 13h2.5M5.6 5.6l1.8 1.8M18.6 18.6l1.8 1.8M5.6 20.4l1.8-1.8M18.6 7.4l1.8-1.8"/></g></svg>`,
+  progress:`<svg viewBox="0 0 26 26" aria-hidden="true"><rect x="4" y="14" width="4.5" height="8" rx="1.5" fill="currentColor"/><rect x="10.75" y="9" width="4.5" height="13" rx="1.5" fill="currentColor"/><rect x="17.5" y="4" width="4.5" height="18" rx="1.5" fill="currentColor"/></svg>`,
+  you:`<svg viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="9" r="4.5" fill="currentColor"/><path d="M4.5 22c.8-4.3 4.2-7 8.5-7s7.7 2.7 8.5 7" fill="currentColor"/></svg>`
+};
+const tabbar=()=>`<nav class="tabbar" role="tablist">${[['today','Today'],['progress','Progress'],['you','You']].map(([k,l])=>`<button class="tab" role="tab" data-a="tab" data-v="${k}" aria-selected="${ui.tab===k}">${ICONS[k]}${l}</button>`).join('')}</nav>`;
+
+/* ---------- render ---------- */
+function render(){
+  applyTheme();
+  if (!S.onboarded){ renderOnboarding(); return; }
+  const v = ui.tab==='today'?renderToday():ui.tab==='progress'?renderProgress():renderYou();
+  $app.innerHTML = v + tabbar();
+}
+
+/* ---------- events ---------- */
+$app.addEventListener('click', e=>{
+  const b=e.target.closest('[data-a]'); if(!b) return;
+  const a=b.dataset.a, v=b.dataset.v, id=b.dataset.id;
+  const o=ui.ob;
+  switch(a){
+    case 'tab': ui.tab=v; render(); $app.querySelector('.screen').scrollTop=0; break;
+    case 'add': if(todays().length>=3 && ui.tab==='today'){ toast('Today is full. This one will be saved for later.'); } editSheet(); break;
+    case 'quick': editSheet(null, v); break;
+    case 'pick': { const c=S.commitments.find(x=>x.id===id); if(todays().length<3){ c.selectedDate=today(); save(); render(); toast('Added to Today'); } break; }
+    case 'start': startSession(id); break;
+    case 'detail': detailSheet(S.commitments.find(x=>x.id===id)); break;
+    case 'appearance': S.settings.appearance=v; save(); render(); break;
+    case 'fast': S.settings.fastTimer=!S.settings.fastTimer; save(); b.setAttribute('aria-checked',S.settings.fastTimer); break;
+    case 'push': pushPage(v); break;
+    case 'restart-ob': S.onboarded=false; ui.ob={step:0,title:'',tiny:'',min:5}; save(); render(); break;
+    case 'seg': bindSegClick(b); break;
+    case 'ob-chip': o.title=v; document.getElementById('ob-title').value=v; document.querySelectorAll('[data-a="ob-chip"]').forEach(c=>c.setAttribute('aria-pressed',c.dataset.v===v)); document.getElementById('ob-err').textContent=''; break;
+    case 'ob-back': if(o.step===2) o.tiny=document.getElementById('ob-tiny').value; o.step--; renderOnboarding(); break;
+    case 'ob-next':
+      if(o.step===1){ o.title=document.getElementById('ob-title').value.trim(); if(!o.title){ document.getElementById('ob-err').textContent='Type something, or pick one below.'; return; } if(!o.tiny) o.tiny=''; }
+      o.step++; renderOnboarding(); break;
+    case 'ob-finish': {
+      const tiny=document.getElementById('ob-tiny').value.trim();
+      const existing=S.commitments.find(c=>c.fromOnboarding && !c.archivedAt);
+      if(existing) Object.assign(existing,{title:o.title,tinyStep:tiny,minutes:o.min,selectedDate:today()});
+      else S.commitments.push({id:uid(), title:o.title, tinyStep:tiny, minutes:o.min, createdAt:Date.now(), updatedAt:Date.now(), selectedDate:today(), fromOnboarding:true});
+      S.onboarded=true; ui.tab='today'; save(); render(); break;
+    }
+  }
+});
+function bindSegClick(b){
+  b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-checked',x===b));
+  if(b.dataset.name==='ob-min') ui.ob.min=+b.dataset.v;
+}
+
+/* ---------- boot ---------- */
+render();
+if (S.active){ // restore a running session after reload, using absolute timestamps
+  const total=S.active.minutes*60000;
+  if (elapsedMs()>=total){ const c=S.commitments.find(x=>x.id===S.active.cid); if(c){ openFocus(); } else { S.active=null; save(); } }
+  else openFocus();
+}
+})();
+</script>
+</body>
+</html>
