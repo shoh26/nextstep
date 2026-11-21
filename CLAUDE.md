@@ -12,5 +12,6 @@
 - Branches and PRs only; `main` is protected.
 
 ## Current status
+- Delivery plan: `docs/PLAN.md`. Decisions and open questions: `docs/decisions.md`.
 - `prototype/` — clickable web preview (HTML) of the MVP flow for founder review. Not production code.
 - Milestone 0 (Screen Time feasibility spike) is deferred until the founder has a paid Apple Developer account. The founder chose to review the action-first experience first.
